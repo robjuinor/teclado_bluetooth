@@ -1,6 +1,6 @@
 # Teclado Bluetooth
 
-Teclado bluetooth baseado em ESP32 com 10 botões configuráveis (B1, B2, ..., B10) através de 2 alavancas (A1 e A2).
+Teclado bluetooth baseado em ESP32 com 10 botões (B1, B2, ..., B10), configuráveis através de 2 alavancas (A1 e A2).
 
 <img src="imagens/dispositivo.jpg">
 
