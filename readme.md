@@ -1,6 +1,8 @@
 # Teclado Bluetooth
 
-Teclado bluetooth baseado em ESP32 com 10 botões configuráveis através de 2 alavancas.
+Teclado bluetooth baseado em ESP32 com 10 botões configuráveis (B1, B2, ..., B10) através de 2 alavancas (A1 e A2).
+
+<img src="imagens/dispositivo.jpg">
 
 ## Programação:
 Para programar este teclado na Arduino IDE é preciso instalar a biblioteca [ESP32-BLE-Keyboard](https://github.com/T-vK/ESP32-BLE-Keyboard). 
@@ -23,3 +25,8 @@ O manual do usuário pode ser encontrado neste repositório como `manual_usuario
 
 <img src="imagens/conexao.png">
 <img src="imagens/diagrama.png">
+
+## Esquema elétrico
+
+Esquema de conexões elétricas:
+<img src="imagens/pinagem.png">
