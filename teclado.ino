@@ -1,117 +1,121 @@
 #include <BleKeyboard.h>  // Biblioteca responsavel pela emulacao de teclado bluetooth
 
-BleKeyboard bleKeyboard;  // Objeto da classe BleKeyboard
+BleKeyboard teclado_ble;  // Objeto da classe BleKeyboard
 
-#define NUMERO_TECLAS 10
-#define NUMERO_CONFIG 2
+#define NUMERO_TECLAS 10  // Numero de botoes B
+#define NUMERO_CONFIG 2  // Numero de alavancas de configuracao (necessario rever o codigo se for adicionar mais alavancas)
 
 // Associa botoes a portas do microcontrolador
-#define GP_0 13
-#define GP_1 12
-#define GP_2 14
-#define GP_3 26
-#define GP_4 33
-#define GP_5 15
-#define GP_6 4
-#define GP_7 16
-#define GP_8 17
-#define GP_9 5
+#define B1 13  // O numero 13 representa a GPIO 13 e assim por diante
+#define B2 12
+#define B3 14
+#define B4 26
+#define B5 33
+#define B6 15
+#define B7 4
+#define B8 16
+#define B9 17
+#define B10 5
 
 // Associa alavancas a portas do microcontrolador
-#define CF_0 18
-#define CF_1 19
+#define A1 18
+#define A2 19
 
-// Inicializa estados dos botoes e alavancas e uma lista com os pinos de cada botao e alavanca
-bool keyStates[NUMERO_TECLAS + NUMERO_CONFIG] = {false, false, false, false, false, false, false, false, false, false, false, false};
-int keyPins[NUMERO_TECLAS + NUMERO_CONFIG] = {GP_0, GP_1, GP_2, GP_3, GP_4, GP_5, GP_6, GP_7, GP_8, GP_9, CF_0, CF_1};
+// Inicializa estados dos botoes e alavancas
+bool estados_botoes[NUMERO_TECLAS + NUMERO_CONFIG] = {false, false, false, false, false, false, false, false, false, false, false, false};
+// Lista com os pinos de cada botao e alavanca
+int pinos_botoes[NUMERO_TECLAS + NUMERO_CONFIG] = {B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, A1, A2};
 
-// Inicializa as 4 configuracoes possiveis para o teclado
-uint8_t keyCodes0[NUMERO_TECLAS] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
-uint8_t keyCodes1[NUMERO_TECLAS] = {'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'};
-uint8_t keyCodes2[NUMERO_TECLAS] = {'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';'};
-uint8_t keyCodes3[NUMERO_TECLAS] = {'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/'};
+// Inicializa as 4 configuracoes possiveis para o teclado (alguns valores sao digitados aqui diferentes do valor real para um notebook comum em pt-BR. Por exemplo, '/' corresponde ao valor real digitado ';')
+uint8_t valores_teclas0[NUMERO_TECLAS] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
+uint8_t valores_teclas1[NUMERO_TECLAS] = {'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'};
+uint8_t valores_teclas2[NUMERO_TECLAS] = {'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';'};
+uint8_t valores_teclas3[NUMERO_TECLAS] = {'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/'};
 
 // Inicializa a configuracao vigente do teclado
-uint8_t keyCodes[NUMERO_TECLAS] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
+uint8_t valores_teclas[NUMERO_TECLAS] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
 
-// Ativa o pull up das portas do microcontrolador
-void setInputs(){
-  for(int counter = 0; counter < NUMERO_TECLAS + NUMERO_CONFIG; counter ++){
-    pinMode(keyPins[counter], INPUT_PULLUP);
+// Ativa o pull up das portas do microcontrolador para que sejam ativadas com nivel logico 0
+void prepara_entradas(){
+  for(int contador = 0; contador < NUMERO_TECLAS + NUMERO_CONFIG; contador ++){
+    pinMode(pinos_botoes[contador], INPUT_PULLUP);
   }
 }
 
 void setup() {
   Serial.begin(115200);  // Baud rate da visualizacao serial
-  Serial.println("Starting BLE work!");
-  setInputs(); // Ativa o pull up das portas do microcontrolador
-  bleKeyboard.begin();  // Ativa o teclado bluetooth
+  Serial.println("Inicializando");
+  prepara_entradas(); // Ativa o pull up das portas do microcontrolador
+  teclado_ble.begin();  // Ativa o teclado bluetooth
 }
 
 // Variavel para visualizacao serial, util em debugging
-bool connectNotificationSent = false;
+bool notificacaoConexaoEnviada = false;
 
 // Funcao que cuida do aperto de botoes
-void handleButton(int keyIndex){
-  if(!digitalRead(keyPins[keyIndex])){
-    if(!keyStates[keyIndex]){
-      keyStates[keyIndex] = true;
-      bleKeyboard.press(keyCodes[keyIndex]);
-      delay(50);
+void interacao_botao(int indice){
+  if(!digitalRead(pinos_botoes[indice])){  // Se leu que o botao foi apertado
+    if(!estados_botoes[indice]){  // Se o estado anterior era falso
+      estados_botoes[indice] = true;  // Atualiza estado para verdadeiro
+      teclado_ble.press(valores_teclas[indice]);  // Digita valor do botao no computador
+      delay(50);  // Delay 50ms para reduzir efeito de bouncing mecanico com os botoes usados
     }
   }
   else{
-    if(keyStates[keyIndex]){
-      keyStates[keyIndex] = false;
-      bleKeyboard.release(keyCodes[keyIndex]);
+    if(estados_botoes[indice]){  // Se o estado anterior era verdadeiro
+      estados_botoes[indice] = false;  // Atualiza estado para falso
+      teclado_ble.release(valores_teclas[indice]); // Para de digitar valor do botao no computador
     }
   }
 }
 
 // Funcao que configura o teclado a partir do nivel logico das alavancas (duas alavancas formando um numero binario de dois digitos, ou seja 4 valores = 4 configuracoes possiveis)
 void configurar_teclado(){
-  if(!digitalRead(keyPins[NUMERO_TECLAS])){
-    keyStates[NUMERO_TECLAS] = false;
-    if(keyStates[NUMERO_TECLAS + 1]){
-      memcpy(keyCodes, keyCodes2, NUMERO_TECLAS);
+  // Confere estado logico das alavancas A1 e A2 e atualiza valor da alavanca A1, alem de escolher o valor dos botoes baseado nos estados logicos de A1 e A2
+  if(!digitalRead(pinos_botoes[NUMERO_TECLAS])){  // Leitura da alavanca A1
+    estados_botoes[NUMERO_TECLAS] = false;  // Atualiza estado logico alavanca A1
+    if(estados_botoes[NUMERO_TECLAS + 1]){  // Confere estado logico alavanca A2
+      memcpy(valores_teclas, valores_teclas2, NUMERO_TECLAS);  // Utiliza a configuracao 2 como a vigente
     }
     else{
-      memcpy(keyCodes, keyCodes3, NUMERO_TECLAS);
+      memcpy(valores_teclas, valores_teclas3, NUMERO_TECLAS);  // Utiliza a configuracao 3 como a vigente
     }
   }
   else{
-    keyStates[NUMERO_TECLAS] = true;
-    if(keyStates[NUMERO_TECLAS + 1]){
-      memcpy(keyCodes, keyCodes0, NUMERO_TECLAS);
+    estados_botoes[NUMERO_TECLAS] = true;  // Atualiza estado logico alavanca A1
+    if(estados_botoes[NUMERO_TECLAS + 1]){  // Confere estado logico alavanca A2
+      memcpy(valores_teclas, valores_teclas0, NUMERO_TECLAS);  // Utiliza a configuracao 0 como a vigente
     }
     else{
-      memcpy(keyCodes, keyCodes1, NUMERO_TECLAS);
+      memcpy(valores_teclas, valores_teclas1, NUMERO_TECLAS);  // Utiliza a configuracao 1 como a vigente
     }
   }
   
-
-  if(!digitalRead(keyPins[NUMERO_TECLAS + 1])){
-    keyStates[NUMERO_TECLAS + 1] = false;
+  // Atualiza estado logico da alavanca A2
+  if(!digitalRead(pinos_botoes[NUMERO_TECLAS + 1])){  // Leitura da alavanca A2
+    estados_botoes[NUMERO_TECLAS + 1] = false;  // Atualiza estado logico alavanca A2
   }
   else{
-    keyStates[NUMERO_TECLAS + 1] = true;
+    estados_botoes[NUMERO_TECLAS + 1] = true;  // Atualiza estado logico alavanca A2
   }
 }
 
 // Loop principal
 void loop() {
-  int counter;  // Inicializa contagem de iteracao dos botoes
-  if(bleKeyboard.isConnected()){
-    if(!connectNotificationSent){
-      Serial.println("Code connected...");  // Visualizacao serial, util em debugging
-      connectNotificationSent = true;
+  int contador;  // Inicializa contagem de iteracao dos botoes
+  if(teclado_ble.isConnected()){
+    //Notificacao serial de conexao
+    if(!notificacaoConexaoEnviada){
+      Serial.println("Conectado");  // Visualizacao serial, util em debugging
+      notificacaoConexaoEnviada = true;
     }
 
+    // Atualiza configuracao do teclado com base em A1 e A2
     configurar_teclado();
 
-    // Itera as teclas para determinar seu nivel logico
-    for(counter = 0; counter < NUMERO_TECLAS; counter ++){
-      handleButton(counter);
+    // Itera as teclas para determinar seu nivel logico e digitar valor no computador
+    for(contador = 0; contador < NUMERO_TECLAS; contador ++){
+      interacao_botao(contador);
     }
   }
 }
